@@ -1,8 +1,66 @@
 # Expressive JS
 
-A minimalist declarative UI toolkit based on pure functional architecture.
+A minimalist declarative UI toolkit + functional toolkit designed around purity, simplicity, and immutable data.
 
-## Example usage:
+---
+
+## 🔥 Why does this exist?
+
+React introduced a declarative syntax that transformed front-end development—but it remains deeply tied to mutable state abstractions, component lifecycle hooks, and imperative reconciliation machinery.
+
+Expressive JS asks a radical question:
+
+> **Can we go further?**
+
+- **What if all UI were simply pure functions?**  
+- **What if state could live _entirely_ in the DOM itself?**  
+- **What if reconciliation could be _eliminated as a concept_ because every "re-render" is simply the next pure function invocation?**  
+- **What if the core primitives required to build apps could reduce to just "functions returning data"?**
+
+---
+
+## 🧠 Core philosophy
+
+### 🔹 No implicit state
+
+In React:
+
+- Components encapsulate mutable state internally  
+- Hooks, reducers, effects and context manage synchronization
+
+In Expressive:
+
+- Components are simply pure functions  
+- If you want to "update", you just _call them again with new arguments_
+
+> **The DOM itself is the _only_ stateful object.**
+
+---
+
+### 🔹 No lifecycle hooks, no effects
+
+Every invocation of a function element is treated as the full truth about its subtree.
+
+---
+
+### 🔹 Minimal abstraction
+
+Rather than virtual DOM diffing by comparing two opaque tree snapshots, Expressive’s reconciliation strategy is:
+
+- **Direct correspondence between a node and the pure function that produced it**  
+- No `key` or `id` attributes required for reconciliation  
+- Event handlers can simply "re-run" the component, replacing it declaratively
+
+---
+
+### 🔹 Built for compositional metaprogramming
+
+Expressive JS complements its UI toolkit (`elements.js`) with `functions.js`:  
+a pure functional toolkit + minimal Lisp-style interpreter that treats **code itself as immutable data**.
+
+---
+
+## 🚀 Example usage
 
 ```js
 import {
@@ -26,292 +84,244 @@ const appTree = html(
     h1('Expressive JS'),
     h2('Declarative components'),
     main(
+      counter(),
       counter()
     )
   )
 );
 
 render(appTree);
+````
 
-A new project that (so far anyway), is split into two totally separate, complimentary parts:
+✅ **This will render two independent counters on the page —
+with no lifecycle, state management or external abstraction required.**
 
-* A toolkit for creating web interfaces. Let's call it _elements.js_.
-* A suite of utility functions featuring a Lisp-style interpreter for JavaScript arrays. How about _functions.js_?
+---
 
-I may break these into separate libraries at some point, but for now they live together for convenience. They'll be "done" when I've proven to myself that they add something of value to the JavaScript landscape (and when I've built something substantial enough with them to prove production-readiness).
+# 📐 Elements.js
 
-**This is still a just a brain dump**, an evolving group of ideas still in the process of formation. For the most part the code does work as described, but it's constantly evolving too.
+Expressive’s UI layer is based on a single principle:
 
-# Elements.js
+> **Any function that returns a declarative tree can be treated as a reusable, composable component.**
 
-The idea is to compose the UI with _function elements_ that emit HTML, creating a structure that immediately generates the real DOM. Running the code below will render a web page.
+---
 
-## Hello World
-```js
-import './expressive/global.js'
-
-render(
-  html(
-    head(
-      title('Expressive'),
-      link({ rel: 'icon', href: 'img/favicon.ico' })),
-    body(
-      { style:
-      { background: '#222',
-        color: '#eee',
-        textAlign: 'center' } },
-        main(
-          h1('Hello World')))))
-```
-
-### Modular CSS
-
-There's no reason we shouldn't use the CSS modules approach here, and we can certainly use the CSS Modules library if desired. But why not simply move our styles into a normal JavaScript object in a separate file? This may or may not be a good idea, but it deserves some exploration to see what problems will arise.
+### 🔹 Stateless Components
 
 ```js
-import style from './style.js'
-
-const { container } = style 
-
-body({ style: container }, main(h1('Hello World'))
-```
-
-## Stateless Components
-
-**State really only _must_ exist in two places, neither of which is our component:**
-
-1. In persistent storage such as a database server.
-2. In the state rendered on the screen.
-
-The code itself also may carry "state" as default function arguments or in separate fixtures. While not stricly necessary, these values can be useful while waiting for results from an API, for unit testing, and to enable static type checking in an otherwise dynamic system. We'll explore this idea more later.
-
-### A Simple Recursive Counter
-
-Any function that returns an element can be composed together with elements, allowing us to create components analagous to those in React.js. But instead of mutating state to reload an element like we would in a React app, we simply call the component directly, with new arguments.
-
-If a function element is called while it already exists on the page, any changes to its input arguments (or those of its child elements) will cause a corresponding update on the screen.
-
-```js
-import { body, div, pre, button } from './expressive/elements.js'
-
-const counter = (count = 0) =>
+const counter = element((count = 0) =>
   div(
     pre(count),
     button(
-      { onclick: prev => counter(prev + 1) },
-      'Increment'))
+      { onclick: (prev) => counter(prev + 1) },
+      'Increment'
+    )
+  )
+);
 
-body(counter())
+render(counter());
 ```
 
-A function element can take any number of children, and accepts an optional object of [DOM properties](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement#properties) as a first argument.
+---
 
-A component function (like counter()) is a pure, declarative generator of virtual DOM structure. When called from within an event handler (e.g. onclick), the reconciler will automatically bind the result to the specific DOM node whose event triggered the handler, replacing its entire subtree with the new virtual tree produced.
+### 🔹 Composition by default
 
-Event handlers may declare a (prev) argument. The framework automatically injects the current DOM-derived state as prev.
-
-This preserves pure declarative syntax while eliminating the need for explicit keys, ids, or external state management.
-
-### Web Components
-
-Another option is to use the `element` function (which elements.js uses internally to generate the default elements) to generate a web component. With this approach, an actual `<counter />` element will be inserted into the DOM. An advantage to doing it this way is that the element name itself acts as a unique `tagName` selector.
+Function elements nest naturally:
 
 ```js
-import { element } from './expressive/elements.js'
-
-const counter = (count = 0) =>
-  element('counter',
-    div(
-      pre(count),
-      button(
-        { onclick: () => counter(count + 1) },
-        'Increment')))
+main(
+  section(
+    h1('Title'),
+    counter()
+  )
+)
 ```
 
-### API Data
+---
 
-After loading the app with initial arguments, we might want to render it again with data fetched or computed asychronously. Let's replace the start count again, this time with an API response that returns `{ count: 1 }`.
+### 🔹 Event handling without hooks
+
+```js
+button({ onclick: (prev) => counter(prev + 1) }, 'Increment')
+```
+
+The framework automatically passes the "previous state" (inferred from the DOM itself!) as `prev` —
+no useState, useReducer, or proxy abstraction required.
+
+---
+
+### 🔹 API Data
 
 ```js
 fetch('/data')
-  .then(response => response.json())
-  .then(({ count }) => counter(count))
+  .then(res => res.json())
+  .then(({ count }) => counter(count));
 ```
 
-Our counter now begins at `1` instead of `0`.
+Pure composition: async API calls simply provide arguments for declarative render calls.
 
-Notice that the functional purity of our component is preserved because we've limited the side effect to a thin external function-- devoid of internal logic-- that _passes data into_ the component as an argument.
+---
 
+# 🧩 Functions.js
 
-### Alternatively...
+Pure utilities that align with Expressive’s style:
 
-Although immediately selecting and rendering a function element reduces the syntax needed to update the document, it may be too "magical". An alternative implementation is to keep the actual DOM mutations explicit.
+✅ Argument-first
+✅ Immutable
+✅ Composable
+✅ No prototype or OO inheritance pollution
+✅ `evaluate()` for Lisp-style symbolic computing
+
+---
+
+### 🔹 Example utilities
 
 ```js
-import { body, div, pre, button, append, replace } from './expressive/elements.js'
-
-const counter = (count = 0) =>
-  div({ id: 'counter-1' },
-    pre(count),
-    button(
-      { onclick: () => replace('#counter-1', counter(count + 1)) },
-      'Increment'))
-
-append(body, counter())
+map(array, fn)      // instead of array.map(fn)
+keys(obj)           // instead of Object.keys(obj)
+reverse(array)      // immutable reverse
+deepMap(value, fn)  // recursive structure mapper
+log(...args)        // console.log passthrough returning last arg
 ```
 
-Here `body`, `append`, and `replace` are just syntactic sugar for `document.body.append()` and `document.querySelector('#id').replaceWith()`. This approach also simplifies the implementation of the function elements-- they're now just a fairly thin wrapper around `document.createElement()`.
+---
 
-# Functions.js
+### 🔹 `evaluate()`: minimal Lisp-style interpreter
 
-This project began as an exploration of Lisp, lambda calculus, and functional programming. I wondered if it might be possible to implement a list processor using arrays, in order to gain the benefits of a Lisp syntax while being able to levarage all of the libraries we know and love because _it's just JavaScript_.
-
-## `evaluate(array)`
-
-The `evaluate` function works much like the core Lisp function `eval`, which recursively evaluates a tree of nested lists.
-
-Given the functions `log(x)` and `sum(x, y)`,
+Treat nested arrays as data or code.
 
 ```js
-import { evaluate, log, sum } from './expressive/functions.js'
-
-evaluate(
-  [log,
-    1,
-    [sum, 1, 1],
-    [sum,
-      1,
-      [sum, 1, 1]]])
+evaluate([sum, 1, [sum, 2, 3]])  // 6
 ```
 
-will log `1 2 3` to the console.
+---
 
-* If first element in the array is a function, the array is a _function application_. The remaining elements will be passsed to it as arguments.
-* Any arguments that are themselves function applications will be evaluated first, and so on down the tree.
-* Arrays without a leading function are treated as data and returned unaffected. Any function applications they contain will _not_ be evaluated.
-
-### Data as Code
-
-Let's use our function elements as we did before, but this time refrain from immediately evaluating the code.
+### 🔹 `cond`: declarative conditionals
 
 ```js
-const app =
-  [html,
-    [doctype, 'html'],
-    [head,
-      [title, 'Expressive'],
-      [link, { rel: 'icon', href: 'img/favicon.ico' }]],
-    [body,
-      { style:
-        { background: '#222',
-          color: '#eee',
-          textAlign: 'center' } },
-      [main,
-        [h1, 'Recursive counter'],
-        [counter, 0]]]]
+cond(
+  x > 10, 'large',
+  x > 5, 'medium',
+  'small'  // fallback
+)
 ```
 
-Now, because the app code is represented as data, we can change the structure of the code using plain JavaScript as a meta-language. In this case, we'll update the UI between render cycles by creating a copy of the application with the start of 2 instead of 0.
+---
+
+## 🧠 Theory and justification
+
+Expressive JS emerges from this premise:
+
+### 🔹 **Object-orientation encourages accidental complexity**
+
+OO UI libraries (even React) blur concerns:
+
+* Internal mutable state, lifecycles, hooks
+* Implicit subscriptions and closures
+* Reconciliation diffing as a separate problem
+
+Expressive reframes UI as pure, declarative functions that **always tell the full truth about their subtree**.
+
+---
+
+### 🔹 **No hidden observer model**
+
+In React, useState + useEffect establish a hidden observer graph
+(where dependencies must be manually managed with arrays like `[]` or `[x]`).
+
+In Expressive, **the DOM itself is the state repository** —
+the physical HTML node that exists is the *only* mutable thing in the system.
+
+---
+
+### 🔹 **Powerful metaprogramming fallback**
+
+Expressive JS makes this possible:
 
 ```js
-const app2 = deepMap(app, node => node === 0 ? 2 : node)
+const ui = [html, [body, [main, [counter, 0]]]];
 
-evaluate(app2)
+evaluate(deepMap(ui, x => x === 0 ? 2 : x));  // render counter starting at 2
 ```
 
-And now the counter begins at 2. See the **Why Bother...** section below for a bit more on this topic and its relationship to Lisp macros.
+In other words:
 
-# Utilities
+> **All UI can be represented, transformed, and manipulated as pure declarative structures before evaluation.**
 
-I found myself adding utility functions to facilitate function composition (as opposed to sequential, procedural statements), to avoid mutation when it isn't really necessary, and to remove the visual noise of dot-property accessors. For example, `console.log(a, b, ...)` is exported as `log(a, b, ...)`. The final argument is returned, allowing us to transparently wrap a function while logging to the console. `reverse()` is implemented as `[...array].reverse()`, producing a new array rather than modifying the original array in place. `Object.keys(object)` becomes `keys(object)`, `array.map(fn)` becomes `map(array, fn)`, and so on.
+This makes Expressive naturally macro-capable
+(while still using plain JavaScript — no parser, no transpiler, no JSX).
 
-## A Simpler, More Readable Syntax
+---
 
-Take the definition of `deepMap`. With plain ES6, the most concise, purely functional way I could come up with to write it was
+### Example symbolic program with native functions and symbolic vars:
 
 ```js
-export const deepMap = (value, fn) =>
-  Array.isArray(value)
-    ? value.map(v => deepMap(v, fn))
-    : typeof value === 'object' && value !== null
-      ? Object.entries(object).reduce((o, [k, v]) => ({ ...o, [k]: fn(v) }), {})
-      : fn(value)
-```
+import { evaluate } from './lib/expressive/functions.js';
 
-Not terrible, but the underlying object-oriented implementation of JavaScript clutters it with unnecessary information. Why do we need to express that `entries` is a property of the `Object` prototype? Why are we checking for `null`? And that `reduce` is just a hard-to-read way of creating one object from another. _functions.js_ cleans it up.
+const env = {
+  sum: (a, b) => a + b
+};
+
+const program = [
+  'let',
+  [['x', 1], ['y', 2]],
+  ['sum', 'x', 'y']
+];
+
+console.log(evaluate(program, env));  // Output: 3
+```
+---
+
+### Hydration step
+
+When using `.lisp.js` files transpiled from `.lisp` sources,  
+deserialize the tree before calling `evaluate()`:
+
+---
 
 ```js
-export const deepMap = (value, fn) =>
-  isArray(value) ? map(value, v => deepMap(v, fn))
-    : isObject(value) ? omap(value, v => deepMap(v, fn))
-      : fn(value)
+import program from './my-program.lisp.js';
+import { deserializeTree, evaluate, sum } from './lib/expressive/functions.js';
+
+const env = { sum };
+
+const hydrated = deserializeTree(program, env);
+evaluate(hydrated);
 ```
 
-## Functions Provided
+## 🚨 Status
 
-The list of functions is, of course, evolving, but at the time of this writing the signatures are
+* Early stage but stable enough to build real apps now
+* No transpiler required
+* Works natively in browser or Node (`node --test` fully supported)
+* Extremely small and ergonomic
 
-* `and(x, y)`
-* `append(value, array)`
-* `apply(fn, array)`
-* `bool(value)`
-* `deepMap(value, fn)`
-* `each(array, fn)`
-* `entries(object)`
-* `eq(x, y)`
-* `evaluate(array)`
-* `every(...values)`
-* `exists(value)`
-* `filter(array, fn)`
-* `find(array, fn)`
-* `first(array)`
-* `globalize(object)`
-* `identity(value)`
-* `ifElse(value, then, otherwise)`
-* `isArray(value)`
-* `isEmpty(value)`
-* `isFunction(value)`
-* `isInstance(value, type)`
-* `isObject(value)`
-* `join(array, separator)`
-* `keys(object)`
-* `lastarray`
-* `length(array)`
-* `log(...values)`
-* `map(array, fn)`
-* `not(value)`
-* `omap(object, fn)`
-* `omit(object, key)`
-* `or(x, y)`
-* `partial(fn, ...values)`
-* `reduce(array, fn, value)`
-* `rest(array)`
-* `reverse(array)`
-* `slice(array, start, end)`
-* `some(array, fn)`
-* `split(array, separator, limit)`
-* `sum(...values)`
-* `type(value, type)`
-* `walk(root, f)`
+---
 
-**Why bother creating functions like `and()`, `not()`, and `ifElse()`?**
+## ❤️ Summary
 
-Some might feel that a syntax composed of nothing but functions is beautiful in its simplicity, even if it is a bit more verbose. But perhaps more importantly...
+Expressive JS is an exploration of what happens when we:
 
-### Deferred Evaluation, Metaprogramming, and Lisp Macros
+* Treat UI as pure functions
+* Eliminate component-local state
+* Avoid reconciliation heuristics
+* Treat the DOM itself as the single mutable substrate
+* Add a pure functional toolkit alongside it for composition and metaprogramming
 
-Consider the **Data as Code** section above. If you want to include (say) a conditional expression, we'd normally write it like so:
+---
 
-```js
-const twoOrThree = [sum, 1, x ? 1 : 2]
+🔔 **Get started:**
+
+```bash
+npm install expressive
 ```
 
-Now imagine we wanted to change the value `2` to `3`. If `x` is `true`, we'd be unable to do so because the expression `x ? 1 : 2` will immediately evaluate to `1`. But if we write
+(or clone locally and import as an ES module)
 
-```js
-const twoOrThree = [sum, 1, [ifElse, x, 1, 2]]
+---
+
+👏 **Thank you for exploring this radical, minimalist take on declarative UI.**
+Experimental — but fast, fun, and deeply aligned with Lisp-style simplicity.
+
 ```
 
-we _can_ change `2` to `3` because we've converted the conditional expression to a function application, which is really just an array of data.
-
-It may or may not be possible to realize the full power of Lisp macros while limiting ourselves to native JavaScript. But it's instructive to see how far we can get. Is escaping and unescaping code really the only way to write a macro? What are the limits of treating code as data by decomposing it into small functions instead? Could a self-improving machine learning algorithm be written this way?

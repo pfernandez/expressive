@@ -1,8 +1,30 @@
+/**
+ * expressive/elements.js
+ * 
+ * Minimalist declarative UI framework based on pure functional composition.
+ * 
+ * Purpose:
+ * - All UI defined as pure functions that return declarative arrays.
+ * - Directly composable into a symbolic substrate compatible with Lisp-like dialects.
+ * - No internal mutable state required: DOM itself is the substrate for state.
+ * - No JSX, no keys, no reconciler heuristics — just pure structure + replacement.
+ * 
+ * Core principles:
+ * - Each "element helper" (e.g., div(), span(), svg()) returns a simple array:
+ *   ['div', { props }, ...children]
+ * - `element(fn)` wraps a component function to enable automatic self-replacement
+ *   when invoked via event handlers.
+ * - `render(vtree, container?)` mounts any declarative tree into the DOM.
+ * 
+ * Suitable for:
+ * - Symbolic computation experiments.
+ * - Pure declarative UI without hooks/lifecycle abstractions.
+ * - Foundations for a self-hosting Lisp or declarative symbolic OS.
+ */
+
 const stateMap = new WeakMap()
 
 const isNodeEnv = typeof document === 'undefined'
-
-export const wrap = vnode => ['wrap', {}, vnode]
 
 const changed = (a, b) =>
   typeof a !== typeof b
@@ -162,6 +184,15 @@ export const render = (vtree, container = null) => {
   target.__vnode = vtree
 }
 
+export const wrap = vnode => ['wrap', {}, vnode]
+
+/**
+ * Wraps a function component so that it participates in reconciliation.
+ *
+ * @template T
+ * @param {(...args: any[]) => any} fn - A pure function that returns a declarative tree (array format).
+ * @returns {(...args: any[]) => any} - A callable component that can manage its own subtree.
+ */
 export const element = fn => {
   return (...args) => wrap(fn(...args))
 }
@@ -193,6 +224,31 @@ const isPropsObject = x =>
   && !Array.isArray(x)
   && !(typeof Node !== 'undefined' && x instanceof Node)
 
+/**
+ * A map of supported HTML and SVG element helpers.
+ *
+ * Each helper is a function that accepts optional props as first argument
+ * and children as subsequent arguments.
+ *
+ * Example:
+ *
+ * ```js
+ * div({ id: 'foo' }, 'Hello World')
+ * ```
+ *
+ * Produces:
+ *
+ * ```js
+ * ['div', { id: 'foo' }, 'Hello World']
+ * ```
+ *
+ * The following helpers are included:
+ * `div`, `span`, `button`, `svg`, `circle`, etc.
+ *
+ * @typedef {function([propsOrChild], ...children): Array} ElementHelper
+ *
+ * @type {Record<string, ElementHelper>}
+ */
 export const elements = tagNames.reduce(
   (acc, tag) => ({
     ...acc,
@@ -207,6 +263,28 @@ export const elements = tagNames.reduce(
   }
 )
 
+/**
+ * Individual element helper functions:
+ *
+ * These are dynamically generated but equivalent to:
+ *
+ * ```js
+ * export const div = (propsOrChild, ...children) => ['div', props, ...children]
+ * export const span = ...
+ * ```
+ *
+ * Example usage:
+ *
+ * ```js
+ * div({ class: 'foo' }, 'Hello')
+ * ```
+ *
+ * Produces:
+ *
+ * ```js
+ * ['div', { class: 'foo' }, 'Hello']
+ * ```
+ */
 export const {
   fragment, a, abbr, address, area, article, aside, audio, b, base, bdi, bdo, blockquote, body,
   br, button, canvas, caption, cite, code, col, colgroup, data, datalist, dd, del, details,

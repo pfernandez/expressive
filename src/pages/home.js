@@ -1,3 +1,4 @@
+import { figure, h3, section } from '../lib/expressive/elements.js'
 import counter from '../components/counter.js'
 import md from '../components/markdown.js'
 
@@ -45,7 +46,7 @@ directly, with new arguments.
 
   figure(
     h3('Recursive Counter'),
-    counter('counter-1', 0)),
+    counter()),
 
   md(`
 
@@ -64,11 +65,11 @@ server.
 
   figure(
     h3('Recursive Counter'),
-    counter('counter-2', 0)),
+    counter()),
 
   (fetch('/data')
     .then(response => response.json())
-    .then(({ count }) => counter('counter-2', count)), ''),
+    .then(({ count }) => counter(count)), ''),
 
   md(`
 

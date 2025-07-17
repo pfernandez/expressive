@@ -72,6 +72,11 @@ body(counter())
 
 A function element can take any number of children, and accepts an optional object of [DOM properties](https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement#properties) as a first argument.
 
+A component function (like counter()) is a pure, declarative generator of virtual DOM structure. When called from within an event handler (e.g. onclick), the reconciler will automatically bind the result to the specific DOM node whose event triggered the handler, replacing its entire subtree with the new virtual tree produced.
+
+Event handlers may declare a (prev) argument. The framework automatically injects the current DOM-derived state as prev.
+
+This preserves pure declarative syntax while eliminating the need for explicit keys, ids, or external state management.
 ### Selecting DOM Elements
 
 While we can compare function elements to React components, they also have a similarity to jQuery selectors.

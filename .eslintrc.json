@@ -48,6 +48,8 @@
     "space-infix-ops": "warn" },
 
   "globals": {
+    "process": "readonly",
+
     "apply": "readonly",
     "bool": "readonly",
     "deepMap": "readonly",

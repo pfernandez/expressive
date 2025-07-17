@@ -119,6 +119,15 @@ export const evaluate = ([fn, ...rest]) =>
       !(isArray(value) && isFunction(first(value)))
         ? value : evaluate(value)))
 
+export const serializeTree = node =>
+  isArray(node)
+    ? [
+      typeof first(node) === 'function' ? first(node).name : first(node),
+      node[1],
+      ...rest(rest(node)).map(serializeTree)
+    ]
+    : node
+
 // TODO: Keep necessary spaces and combine regexes.
 export const parseLisp = string =>
   eval(string

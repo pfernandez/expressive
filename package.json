@@ -19,7 +19,8 @@
   },
   "main": "server.js",
   "scripts": {
-    "start": "nodemon --ignore src"
+    "start": "nodemon --ignore src",
+    "test": "NODE_ENV=test node test/counter.test.js"
   },
   "dependencies": {
     "@picocss/pico": "^1.4.4",

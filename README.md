@@ -6,9 +6,9 @@ A minimalist declarative UI toolkit based on pure functional architecture.
 
 ```js
 import {
+  render, element,
   html, head, body, main, h1, h2, pre, button, div
 } from './lib/expressive/elements.js';
-import { render, element } from './lib/expressive/reconciler.js';
 
 const counter = element((count = 0) =>
   div(
@@ -26,7 +26,6 @@ const appTree = html(
     h1('Expressive JS'),
     h2('Declarative components'),
     main(
-      counter(),
       counter()
     )
   )
@@ -112,22 +111,6 @@ A component function (like counter()) is a pure, declarative generator of virtua
 Event handlers may declare a (prev) argument. The framework automatically injects the current DOM-derived state as prev.
 
 This preserves pure declarative syntax while eliminating the need for explicit keys, ids, or external state management.
-### Selecting DOM Elements
-
-While we can compare function elements to React components, they also have a similarity to jQuery selectors.
-
-The counter example above, if included in a larger web page, would have updated every `<div>` on the page. To target a specific element or group of elements, pass it an ID or class name.
-
-```js
-const counter = (id = 'counter-1', count = 0) =>
-  div({ id },
-    pre(count),
-    button(
-      { onclick: () => counter({ id }, count + 1) },
-      'Increment'))
-
-body(counter())
-```
 
 ### Web Components
 

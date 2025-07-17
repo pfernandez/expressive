@@ -25,7 +25,5 @@ const appTree = html(
   )
 )
 
-console.log('appTree:', appTree)
-
 // Mount your tree explicitly — reconciler will auto-handle `html()` root!
 render(appTree)

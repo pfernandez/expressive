@@ -1,38 +1,19 @@
 {
   "name": "expressive",
-  "version": "0.0.1",
-  "description": "A Lisp syntax for JavaScript",
-  "author": "Paul Fernandez",
-  "license": "ISC",
+  "version": "0.1.0",
+  "description": "A minimalist declarative UI toolkit with pure functional architecture",
+  "main": "src/index.js",
   "type": "module",
-  "keywords": [
-    "javascript",
-    "lisp"
-  ],
-  "homepage": "https://github.com/pfernandez/expressive#readme",
-  "bugs": {
-    "url": "https://github.com/pfernandez/expressive/issues"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/pfernandez/expressive.git"
-  },
-  "main": "server.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test"
-  },
-  "dependencies": {
-    "@picocss/pico": "^1.4.4",
-    "markdown-it": "^12.3.2"
+    "test": "node test/*.test.js"
   },
   "devDependencies": {
     "eslint": "^7.32.0",
-    "express": "^4.17.1",
-    "livereload": "^0.9.3",
-    "nodemon": "^2.0.14",
-    "vite": "^7.0.5"
-  }
+    "vite": "^5.0.0"
+  },
+  "author": "Paul Fernandez",
+  "license": "MIT"
 }

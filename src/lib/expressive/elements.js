@@ -4,7 +4,7 @@ export const element = fn => {
   return (...args) => wrap(fn(...args))
 }
 
-const tagNames = [
+const htmlTagNames = [
   'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
   'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col',
   'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl',
@@ -18,13 +18,24 @@ const tagNames = [
   'time', 'title', 'tr', 'track', 'u', 'ul', 'video', 'wbr'
 ]
 
+const svgTagNames = [
+  'svg', 'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect',
+  'g', 'defs', 'linearGradient', 'radialGradient', 'stop', 'symbol', 'use',
+  'text', 'viewBox'
+]
+
+const tagNames = [...htmlTagNames, ...svgTagNames]
+
+const isPropsObject = x =>
+  typeof x === 'object' && x !== null
+  && !Array.isArray(x)
+  && !(typeof Node !== 'undefined' && x instanceof Node)
+
 export const elements = tagNames.reduce(
   (acc, tag) => ({
     ...acc,
     [tag]: (propsOrChild, ...children) => {
-      const props = typeof propsOrChild === 'object' && !Array.isArray(propsOrChild) && !(propsOrChild instanceof Node)
-        ? propsOrChild
-        : {}
+      const props = isPropsObject(propsOrChild) ? propsOrChild : {}
       const actualChildren = props === propsOrChild ? children : [propsOrChild, ...children]
       return [tag, props, ...actualChildren]
     }
@@ -42,5 +53,7 @@ export const {
   legend, li, link, main, map, mark, menu, meta, meter, nav, noscript, object, ol, optgroup,
   option, output, p, param, picture, pre, progress, q, rp, rt, ruby, s, samp, script, section,
   select, slot, small, source, span, strong, style, sub, summary, sup, table, tbody, td,
-  template, textarea, tfoot, th, thead, time, title, tr, track, u, ul, video, wbr
+  template, textarea, tfoot, th, thead, time, title, tr, track, u, ul, video, wbr,
+  svg, circle, ellipse, line, path, polygon, polyline, rect, g, defs, linearGradient,
+  radialGradient, stop, symbol, use, text, viewBox
 } = elements

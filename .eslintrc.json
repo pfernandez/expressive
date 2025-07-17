@@ -49,6 +49,7 @@
 
   "globals": {
     "process": "readonly",
+    "test": "readonly",
 
     "apply": "readonly",
     "bool": "readonly",

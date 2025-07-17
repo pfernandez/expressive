@@ -1,5 +1,39 @@
 # Expressive JS
 
+A minimalist declarative UI toolkit based on pure functional architecture.
+
+## Example usage:
+
+```js
+import {
+  html, head, body, main, h1, h2, pre, button, div
+} from './lib/expressive/elements.js';
+import { render, element } from './lib/expressive/reconciler.js';
+
+const counter = element((count = 0) =>
+  div(
+    pre(count),
+    button(
+      { onclick: (prev) => counter(prev + 1) },
+      'Increment'
+    )
+  )
+);
+
+const appTree = html(
+  head(),
+  body(
+    h1('Expressive JS'),
+    h2('Declarative components'),
+    main(
+      counter(),
+      counter()
+    )
+  )
+);
+
+render(appTree);
+
 A new project that (so far anyway), is split into two totally separate, complimentary parts:
 
 * A toolkit for creating web interfaces. Let's call it _elements.js_.
@@ -17,17 +51,18 @@ The idea is to compose the UI with _function elements_ that emit HTML, creating 
 ```js
 import './expressive/global.js'
 
-html(
-  head(
-    title('Expressive'),
-    link({ rel: 'icon', href: 'img/favicon.ico' })),
-  body(
-    { style:
+render(
+  html(
+    head(
+      title('Expressive'),
+      link({ rel: 'icon', href: 'img/favicon.ico' })),
+    body(
+      { style:
       { background: '#222',
         color: '#eee',
         textAlign: 'center' } },
-    main(
-      h1('Hello World'))))
+        main(
+          h1('Hello World')))))
 ```
 
 ### Modular CSS
@@ -64,7 +99,7 @@ const counter = (count = 0) =>
   div(
     pre(count),
     button(
-      { onclick: () => counter(count + 1) },
+      { onclick: prev => counter(prev + 1) },
       'Increment'))
 
 body(counter())

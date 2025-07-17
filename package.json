@@ -19,8 +19,10 @@
   },
   "main": "server.js",
   "scripts": {
-    "start": "nodemon --ignore src",
-    "test": "NODE_ENV=test node test/counter.test.js"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test"
   },
   "dependencies": {
     "@picocss/pico": "^1.4.4",
@@ -30,6 +32,7 @@
     "eslint": "^7.32.0",
     "express": "^4.17.1",
     "livereload": "^0.9.3",
-    "nodemon": "^2.0.14"
+    "nodemon": "^2.0.14",
+    "vite": "^7.0.5"
   }
 }

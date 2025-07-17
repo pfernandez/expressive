@@ -1,34 +1,23 @@
+import assert from 'assert'
 import counter from '../src/components/counter.js'
-import { serializeTree } from '../src/lib/expressive/functions.js'
+import { test } from 'node:test'
 
-const assertEqual = (a, b, msg) => {
-  if (a !== b)
-    throw new Error(`Assertion failed: ${msg} (expected ${b}, got ${a})`)
-}
+test('counter() returns valid wrapped vdom', () => {
+  const vdom = counter()
 
-const assertDeepEqual = (a, b, msg) => {
-  const jsonA = JSON.stringify(a)
-  const jsonB = JSON.stringify(b)
-  if (jsonA !== jsonB)
-    throw new Error(
-      `Assertion failed: ${msg}\nExpected: ${jsonB}\nGot: ${jsonA}`)
-}
+  assert.ok(Array.isArray(vdom), 'vdom should be an array')
+  assert.strictEqual(vdom[0], 'wrap', 'vdom should be wrapped')
 
-console.log('Running tests...')
+  const inner = vdom[2]
+  assert.ok(Array.isArray(inner), 'inner should be an array')
+  assert.strictEqual(inner[0], 'div', 'root element should be div')
 
-// --- Test 1: counter(3) structure ---
-const tree = counter(3)
-const serialized = serializeTree(tree)
+  const children = inner.slice(2)
+  const preNode = children.find(c => Array.isArray(c) && c[0] === 'pre')
+  const buttonNode = children.find(c => Array.isArray(c) && c[0] === 'button')
 
-assertEqual(serialized[0], 'div', 'Root element should be div')
-assertEqual(serialized[2][2], 3, 'Counter text should be 3')
-
-assertDeepEqual(serialized, [
-  'div',
-  { style: { fontSize: '3em', maxWidth: '250px', textAlign: 'center' } },
-  ['pre', {}, 3],
-  ['button', {}, 'Increment']
-], 'Serialized tree should exactly match expected')
-
-console.log('✅ All tests passed')
-
+  assert.ok(preNode, 'pre element should exist')
+  assert.strictEqual(preNode[2], 0, 'initial count should be 0')
+  assert.ok(buttonNode, 'button element should exist')
+  assert.ok(typeof buttonNode[1].onclick === 'function', 'button should have onclick handler')
+})

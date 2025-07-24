@@ -4,7 +4,7 @@ A minimalist declarative UI toolkit + functional toolkit designed around purity,
 
 ---
 
-## 🔥 Why does this exist?
+## Why does this exist?
 
 React introduced a declarative syntax that transformed front-end development—but it remains deeply tied to mutable state abstractions, component lifecycle hooks, and imperative reconciliation machinery.
 
@@ -19,9 +19,9 @@ Expressive JS asks a radical question:
 
 ---
 
-## 🧠 Core philosophy
+## Core philosophy
 
-### 🔹 No implicit state
+### No implicit state
 
 In React:
 
@@ -37,13 +37,13 @@ In Expressive:
 
 ---
 
-### 🔹 No lifecycle hooks, no effects
+### No lifecycle hooks, no effects
 
 Every invocation of a function element is treated as the full truth about its subtree.
 
 ---
 
-### 🔹 Minimal abstraction
+### Minimal abstraction
 
 Rather than virtual DOM diffing by comparing two opaque tree snapshots, Expressive’s reconciliation strategy is:
 
@@ -53,14 +53,14 @@ Rather than virtual DOM diffing by comparing two opaque tree snapshots, Expressi
 
 ---
 
-### 🔹 Built for compositional metaprogramming
+### Built for compositional metaprogramming
 
 Expressive JS complements its UI toolkit (`elements.js`) with `functions.js`:  
 a pure functional toolkit + minimal Lisp-style interpreter that treats **code itself as immutable data**.
 
 ---
 
-## 🚀 Example usage
+## Example usage
 
 ```js
 import {
@@ -93,12 +93,12 @@ const appTree = html(
 render(appTree);
 ````
 
-✅ **This will render two independent counters on the page —
+**This will render two independent counters on the page —
 with no lifecycle, state management or external abstraction required.**
 
 ---
 
-# 📐 Elements.js
+# Elements.js
 
 Expressive’s UI layer is based on a single principle:
 
@@ -106,7 +106,7 @@ Expressive’s UI layer is based on a single principle:
 
 ---
 
-### 🔹 Stateless Components
+### Stateless Components
 
 ```js
 const counter = element((count = 0) =>
@@ -124,7 +124,7 @@ render(counter());
 
 ---
 
-### 🔹 Composition by default
+### Composition by default
 
 Function elements nest naturally:
 
@@ -139,7 +139,7 @@ main(
 
 ---
 
-### 🔹 Event handling without hooks
+### Event handling without hooks
 
 ```js
 button({ onclick: (prev) => counter(prev + 1) }, 'Increment')
@@ -150,7 +150,7 @@ no useState, useReducer, or proxy abstraction required.
 
 ---
 
-### 🔹 API Data
+### API Data
 
 ```js
 fetch('/data')
@@ -162,19 +162,19 @@ Pure composition: async API calls simply provide arguments for declarative rende
 
 ---
 
-# 🧩 Functions.js
+# Functions.js
 
 Pure utilities that align with Expressive’s style:
 
-✅ Argument-first
-✅ Immutable
-✅ Composable
-✅ No prototype or OO inheritance pollution
-✅ `evaluate()` for Lisp-style symbolic computing
+- Argument-first
+- Immutable
+- Composable
+- No prototype or OO inheritance pollution
+- `evaluate()` for Lisp-style symbolic computing
 
 ---
 
-### 🔹 Example utilities
+### Example utilities
 
 ```js
 map(array, fn)      // instead of array.map(fn)
@@ -186,7 +186,7 @@ log(...args)        // console.log passthrough returning last arg
 
 ---
 
-### 🔹 `evaluate()`: minimal Lisp-style interpreter
+### `evaluate()`: minimal Lisp-style interpreter
 
 Treat nested arrays as data or code.
 
@@ -196,7 +196,7 @@ evaluate([sum, 1, [sum, 2, 3]])  // 6
 
 ---
 
-### 🔹 `cond`: declarative conditionals
+### `cond`: declarative conditionals
 
 ```js
 cond(
@@ -208,11 +208,11 @@ cond(
 
 ---
 
-## 🧠 Theory and justification
+## Theory and justification
 
 Expressive JS emerges from this premise:
 
-### 🔹 **Object-orientation encourages accidental complexity**
+### **Object-orientation encourages accidental complexity**
 
 OO UI libraries (even React) blur concerns:
 
@@ -224,7 +224,7 @@ Expressive reframes UI as pure, declarative functions that **always tell the ful
 
 ---
 
-### 🔹 **No hidden observer model**
+### **No hidden observer model**
 
 In React, useState + useEffect establish a hidden observer graph
 (where dependencies must be manually managed with arrays like `[]` or `[x]`).
@@ -234,7 +234,7 @@ the physical HTML node that exists is the *only* mutable thing in the system.
 
 ---
 
-### 🔹 **Powerful metaprogramming fallback**
+### **Powerful metaprogramming fallback**
 
 Expressive JS makes this possible:
 
@@ -289,7 +289,7 @@ const hydrated = deserializeTree(program, env);
 evaluate(hydrated);
 ```
 
-## 🚨 Status
+## Status
 
 * Early stage but stable enough to build real apps now
 * No transpiler required
@@ -298,7 +298,7 @@ evaluate(hydrated);
 
 ---
 
-## ❤️ Summary
+## Summary
 
 Expressive JS is an exploration of what happens when we:
 
@@ -310,7 +310,7 @@ Expressive JS is an exploration of what happens when we:
 
 ---
 
-🔔 **Get started:**
+**Get started:**
 
 ```bash
 npm install expressive
@@ -320,8 +320,6 @@ npm install expressive
 
 ---
 
-👏 **Thank you for exploring this radical, minimalist take on declarative UI.**
+**Thank you for exploring this radical, minimalist take on declarative UI.**
 Experimental — but fast, fun, and deeply aligned with Lisp-style simplicity.
-
-```
 

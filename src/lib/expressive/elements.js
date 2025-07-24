@@ -1,26 +1,48 @@
 /**
  * expressive/elements.js
- * 
+ *
  * Minimalist declarative UI framework based on pure functional composition.
- * 
+ *
  * Purpose:
  * - All UI defined as pure functions that return declarative arrays.
  * - Directly composable into a symbolic substrate compatible with Lisp-like dialects.
  * - No internal mutable state required: DOM itself is the substrate for state.
  * - No JSX, no keys, no reconciler heuristics — just pure structure + replacement.
- * 
+ *
  * Core principles:
  * - Each "element helper" (e.g., div(), span(), svg()) returns a simple array:
  *   ['div', { props }, ...children]
  * - `element(fn)` wraps a component function to enable automatic self-replacement
  *   when invoked via event handlers.
  * - `render(vtree, container?)` mounts any declarative tree into the DOM.
- * 
+ *
  * Suitable for:
  * - Symbolic computation experiments.
  * - Pure declarative UI without hooks/lifecycle abstractions.
  * - Foundations for a self-hosting Lisp or declarative symbolic OS.
  */
+
+const htmlTagNames = [
+  'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
+  'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col',
+  'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl',
+  'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2',
+  'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 'img',
+  'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'menu',
+  'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p',
+  'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script',
+  'section', 'select', 'slot', 'small', 'source', 'span', 'strong', 'style', 'sub',
+  'summary', 'sup', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead',
+  'time', 'title', 'tr', 'track', 'u', 'ul', 'video', 'wbr'
+]
+
+const svgTagNames = [
+  'svg', 'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect',
+  'g', 'defs', 'linearGradient', 'radialGradient', 'stop', 'symbol', 'use',
+  'text', 'viewBox'
+]
+
+const svgNS = 'http://www.w3.org/2000/svg'
 
 const stateMap = new WeakMap()
 
@@ -81,7 +103,16 @@ const assignProperties = (el, props) =>
     } else if (k === 'innerHTML') {
       el.innerHTML = v
     } else {
-      try { el[k] = v } catch {}
+      try {
+        if (el.namespaceURI === svgNS) {
+          el.setAttributeNS(null, k, v)
+        } else {
+          el.setAttribute(k, v)
+        }
+      } catch {
+        console.warn(
+          `Illegal DOM property assignment for ${el.tagName}: ${k}: ${v}`)
+      }
     }
   })
 
@@ -112,7 +143,9 @@ export const renderTree = (node, isRoot = true) => {
         ? document.head
         : tag === 'body'
           ? document.body
-          : document.createElement(tag)
+          : svgTagNames.includes(tag)
+            ? document.createElementNS(svgNS, tag)
+            : document.createElement(tag)
 
   el.__vnode = node
 
@@ -128,6 +161,7 @@ export const renderTree = (node, isRoot = true) => {
     const childEl = renderTree(child, false)
     el.appendChild(childEl)
   })
+
 
   return el
 }
@@ -196,26 +230,6 @@ export const wrap = vnode => ['wrap', {}, vnode]
 export const element = fn => {
   return (...args) => wrap(fn(...args))
 }
-
-const htmlTagNames = [
-  'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
-  'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col',
-  'colgroup', 'data', 'datalist', 'dd', 'del', 'details', 'dfn', 'dialog', 'div', 'dl',
-  'dt', 'em', 'embed', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2',
-  'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hgroup', 'hr', 'html', 'i', 'iframe', 'img',
-  'input', 'ins', 'kbd', 'label', 'legend', 'li', 'link', 'main', 'map', 'mark', 'menu',
-  'meta', 'meter', 'nav', 'noscript', 'object', 'ol', 'optgroup', 'option', 'output', 'p',
-  'param', 'picture', 'pre', 'progress', 'q', 'rp', 'rt', 'ruby', 's', 'samp', 'script',
-  'section', 'select', 'slot', 'small', 'source', 'span', 'strong', 'style', 'sub',
-  'summary', 'sup', 'table', 'tbody', 'td', 'template', 'textarea', 'tfoot', 'th', 'thead',
-  'time', 'title', 'tr', 'track', 'u', 'ul', 'video', 'wbr'
-]
-
-const svgTagNames = [
-  'svg', 'circle', 'ellipse', 'line', 'path', 'polygon', 'polyline', 'rect',
-  'g', 'defs', 'linearGradient', 'radialGradient', 'stop', 'symbol', 'use',
-  'text', 'viewBox'
-]
 
 const tagNames = [...htmlTagNames, ...svgTagNames]
 

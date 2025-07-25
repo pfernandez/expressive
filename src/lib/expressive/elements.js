@@ -79,26 +79,32 @@ const assignProperties = (el, props) =>
     if (k.startsWith('on') && typeof v === 'function') {
       el[k] = (...args) => {
         let target = el
-        while (target && !target.__root) {
-          target = target.parentNode
-        }
+        while (target && !target.__root) target = target.parentNode
         if (!target) return
 
         const prev = stateMap.get(target) ?? 0
-        const result = v.call(el, prev, ...args)
+        try {
+          const result =
+        v.length === 1  // DOM form: event => ...
+          ? v.call(el, args[0])
+          : v.call(el, prev, ...args)
 
-        if (Array.isArray(result)) {
-          const nextCount = prev + 1
-          const parent = target.parentNode
-          if (!parent) return
+          if (Array.isArray(result)) {
+            const nextCount = prev + 1
+            const parent = target.parentNode
+            if (!parent) return
 
-          const replacement = renderTree(result, true)
-          parent.replaceChild(replacement, target)
-          replacement.__vnode = result
-          stateMap.set(replacement, nextCount)
+            const replacement = renderTree(result, true)
+            parent.replaceChild(replacement, target)
+            replacement.__vnode = result
+            stateMap.set(replacement, nextCount)
+          }
+        } catch (err) {
+          console.error('Error in handler:', err)
         }
       }
-    } else if (k === 'style' && typeof v === 'object') {
+    }
+    else if (k === 'style' && typeof v === 'object') {
       Object.assign(el.style, v)
     } else if (k === 'innerHTML') {
       el.innerHTML = v
@@ -116,9 +122,18 @@ const assignProperties = (el, props) =>
     }
   })
 
-export const renderTree = (node, isRoot = true) => {
+const renderTree = (node, isRoot = true) => {
   if (typeof node === 'string' || typeof node === 'number') {
     return isNodeEnv ? node : document.createTextNode(node)
+  }
+
+  if (!node || node.length === 0) {
+    return document.createComment('Empty vnode')
+  }
+
+  if (!Array.isArray(node)) {
+    console.error('Malformed vnode (not an array):', node)
+    return document.createComment('Invalid vnode')
   }
 
   if (Array.isArray(node) && node[0] === 'wrap') {
@@ -128,12 +143,9 @@ export const renderTree = (node, isRoot = true) => {
 
   const [tag, props = {}, ...children] = node
 
-  if (isNodeEnv) {
-    return {
-      tag,
-      props,
-      children: children.map(c => renderTree(c, false))
-    }
+  if (typeof tag !== 'string') {
+    console.error('Malformed vnode (non-string tag):', node)
+    return document.createComment('Invalid vnode')
   }
 
   let el =
@@ -161,7 +173,6 @@ export const renderTree = (node, isRoot = true) => {
     const childEl = renderTree(child, false)
     el.appendChild(childEl)
   })
-
 
   return el
 }
@@ -228,7 +239,15 @@ export const wrap = vnode => ['wrap', {}, vnode]
  * @returns {(...args: any[]) => any} - A callable component that can manage its own subtree.
  */
 export const element = fn => {
-  return (...args) => wrap(fn(...args))
+  return (...args) => {
+    try {
+      const vnode = fn(...args)
+      return ['wrap', {}, vnode]
+    } catch (err) {
+      console.error('Component error:', err)
+      return ['div', {}, `Error: ${err.message}`]
+    }
+  }
 }
 
 const tagNames = [...htmlTagNames, ...svgTagNames]

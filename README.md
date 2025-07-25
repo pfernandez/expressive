@@ -2,7 +2,29 @@
 
 A minimalist declarative UI toolkit + functional toolkit designed around purity, simplicity, and immutable data.
 
+## Features
+
+- Zero-dependency functional UI engine
+- Pure functions for state and view
+- Deep symbolic composability
+- Compatible with Lisp-style evaluation (see `functions.js`)
+
 ---
+
+## Live Demo
+
+[Todos app](https://pfernandez.github.io/expressive)
+
+- Add, toggle, and remove tasks
+- Stateless components using `element()`
+- Event wiring handled by `elements.js`
+
+To run it locally:
+
+```bash
+npm install
+npm run dev
+```
 
 ## Why does this exist?
 
@@ -313,7 +335,7 @@ Expressive JS is an exploration of what happens when we:
 **Get started:**
 
 ```bash
-npm install expressive
+# npm install expressive  <-- TBD
 ```
 
 (or clone locally and import as an ES module)

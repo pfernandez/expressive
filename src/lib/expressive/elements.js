@@ -1,25 +1,13 @@
-/**
- * expressive/elements.js
+/** expressive/elements.js
  *
  * Minimalist declarative UI framework based on pure functional composition.
  *
  * Purpose:
  * - All UI defined as pure functions that return declarative arrays.
- * - Directly composable into a symbolic substrate compatible with Lisp-like dialects.
+ * - Directly composable into a symbolic tree compatible with Lisp-like dialects.
  * - No internal mutable state required: DOM itself is the substrate for state.
  * - No JSX, no keys, no reconciler heuristics — just pure structure + replacement.
  *
- * Core principles:
- * - Each "element helper" (e.g., div(), span(), svg()) returns a simple array:
- *   ['div', { props }, ...children]
- * - `element(fn)` wraps a component function to enable automatic self-replacement
- *   when invoked via event handlers.
- * - `render(vtree, container?)` mounts any declarative tree into the DOM.
- *
- * Suitable for:
- * - Symbolic computation experiments.
- * - Pure declarative UI without hooks/lifecycle abstractions.
- * - Foundations for a self-hosting Lisp or declarative symbolic OS.
  */
 
 const htmlTagNames = [
@@ -44,16 +32,30 @@ const svgTagNames = [
 
 const svgNS = 'http://www.w3.org/2000/svg'
 
-const stateMap = new WeakMap()
+/**
+ * Tracks internal state (such as render count) for each root element.
+ * This map enables component functions to re-render themselves with updated vnodes
+ * while preserving isolation from unrelated DOM elements.
+ *
+ * @type {WeakMap<HTMLElement, number>}
+ */const stateMap = new WeakMap()
+
+/**
+ * Maps vnode instances to their current root DOM element,
+ * allowing accurate replacement when the same vnode is re-invoked.
+ *
+ * @type {WeakMap<any[], HTMLElement>}
+ */
+const rootMap = new WeakMap()
 
 const isNodeEnv = typeof document === 'undefined'
 
 /**
- * Determines whether two vnodes differ enough to trigger a replacement.
- * Compares by type, string value, or tag name if both are arrays.
+ * Determines whether two nodes have changed enough to require replacement.
+ * Compares type, string value, or element tag.
  *
- * @param {*} a - First vnode
- * @param {*} b - Second vnode
+ * @param {*} a - Previous vnode
+ * @param {*} b - New vnode
  * @returns {boolean} - True if nodes are meaningfully different
  */
 const changed = (a, b) =>
@@ -62,12 +64,12 @@ const changed = (a, b) =>
   || Array.isArray(a) && Array.isArray(b) && a[0] !== b[0]
 
 /**
- * Computes the difference between two vnodes and returns a patch object.
- * Patch types include: CREATE, REMOVE, REPLACE, or UPDATE with child diffs.
+ * Computes a patch object describing how to transform tree `a` into tree `b`.
+ * Used by `render` to apply minimal updates to the DOM.
  *
  * @param {*} a - Previous vnode
  * @param {*} b - New vnode
- * @returns {Object} patch - Instructions for transforming a into b
+ * @returns {Object} - Patch object with type and content
  */
 const diffTree = (a, b) => {
   if (!a) return { type: 'CREATE', newNode: b }
@@ -81,15 +83,14 @@ const diffTree = (a, b) => {
   }
 }
 
+
 /**
- * Recursively diffs children arrays of two vnodes.
- * Returns an array of patch objects for each child index.
+ * Compares the children of two vnodes and returns patch list.
  *
- * @param {Array} aChildren - Previous child vnodes
- * @param {Array} bChildren - New child vnodes
- * @returns {Array} patches - List of patch objects
- */
-const diffChildren = (aChildren, bChildren) => {
+ * @param {Array} aChildren - Previous vnode children
+ * @param {Array} bChildren - New vnode children
+ * @returns {Array} patches - One per child node
+ */const diffChildren = (aChildren, bChildren) => {
   const patches = []
   const len = Math.max(aChildren.length, bChildren.length)
   for (let i = 0; i < len; i++) {
@@ -98,16 +99,14 @@ const diffChildren = (aChildren, bChildren) => {
   return patches
 }
 
+
 /**
- * Applies props to a DOM element.
- * Handles standard DOM attributes, inline styles, event listeners,
- * and SVG compatibility. Supports functional event handlers with
- * automatic rerendering of the component.
+ * Assigns attributes, styles, and event handlers to a DOM element.
+ * Includes logic for wrapping event handlers that trigger subtree rerenders.
  *
- * @param {HTMLElement} el - The DOM element to assign props to
- * @param {Object} props - Props object with attributes and event handlers
- */
-const assignProperties = (el, props) =>
+ * @param {HTMLElement} el - DOM element to receive props
+ * @param {Object} props - Attributes or listeners to apply
+ */const assignProperties = (el, props) =>
   Object.entries(props).forEach(([k, v]) => {
     if (k.startsWith('on') && typeof v === 'function') {
       el[k] = (...args) => {
@@ -118,9 +117,7 @@ const assignProperties = (el, props) =>
         const prev = stateMap.get(target) ?? 0
         try {
           const result =
-        v.length === 1  // DOM form: event => ...
-          ? v.call(el, args[0])
-          : v.call(el, prev, ...args)
+            v.length === 1 ? v.call(el, args[0]) : v.call(el, prev, ...args)
 
           if (Array.isArray(result)) {
             const nextCount = prev + 1
@@ -131,6 +128,7 @@ const assignProperties = (el, props) =>
             parent.replaceChild(replacement, target)
             replacement.__vnode = result
             stateMap.set(replacement, nextCount)
+            rootMap.set(result, replacement)
           }
         } catch (err) {
           console.error('Error in handler:', err)
@@ -149,12 +147,19 @@ const assignProperties = (el, props) =>
           el.setAttribute(k, v)
         }
       } catch {
-        console.warn(
-          `Illegal DOM property assignment for ${el.tagName}: ${k}: ${v}`)
+        console.warn(`Illegal DOM property assignment for ${el.tagName}: ${k}: ${v}`)
       }
     }
   })
 
+/**
+ * Recursively builds a real DOM tree from a declarative vnode.
+ * Marks root nodes and tracks state/element associations.
+ *
+ * @param {*} node - Vnode to render
+ * @param {boolean} isRoot - Whether this is a root component
+ * @returns {Node} - Real DOM node
+ */
 const renderTree = (node, isRoot = true) => {
   if (typeof node === 'string' || typeof node === 'number') {
     return isNodeEnv ? node : document.createTextNode(node)
@@ -182,12 +187,9 @@ const renderTree = (node, isRoot = true) => {
   }
 
   let el =
-    tag === 'html'
-      ? document.documentElement
-      : tag === 'head'
-        ? document.head
-        : tag === 'body'
-          ? document.body
+    tag === 'html' ? document.documentElement
+      : tag === 'head' ? document.head
+        : tag === 'body' ? document.body
           : svgTagNames.includes(tag)
             ? document.createElementNS(svgNS, tag)
             : document.createElement(tag)
@@ -198,6 +200,7 @@ const renderTree = (node, isRoot = true) => {
     el.__root = true
     const initialState = typeof node[2] === 'number' ? node[2] : 0
     stateMap.set(el, initialState)
+    rootMap.set(node, el)
   }
 
   assignProperties(el, props)
@@ -211,16 +214,15 @@ const renderTree = (node, isRoot = true) => {
 }
 
 /**
- * Applies a patch object to a DOM node, modifying its children
- * to bring them into sync with the updated vnode.
+ * Applies a patch object to a DOM subtree.
+ * Handles creation, removal, replacement, and child updates.
  *
- * @param {HTMLElement} parent - The parent DOM element
+ * @param {HTMLElement} parent - DOM node to mutate
  * @param {Object} patch - Patch object from diffTree
- * @param {number} [index=0] - Child index to apply the patch to
+ * @param {number} [index=0] - Child index to apply update to
  */
 const applyPatch = (parent, patch, index = 0) => {
   if (!patch) return
-
   const child = parent.childNodes[index]
 
   switch (patch.type) {
@@ -243,15 +245,20 @@ const applyPatch = (parent, patch, index = 0) => {
   }
 }
 
+/**
+ * Renders a new vnode into the DOM. If this vnode was rendered before,
+ * reuses the previous root and applies a patch. Otherwise, performs initial mount.
+ *
+ * @param {HTMLElement} mount - The container to render into
+ * @param {any[]} nextVNode - The declarative vnode array to render
+ */
 export const render = (vtree, container = null) => {
   const target =
     !container && Array.isArray(vtree) && vtree[0] === 'html'
       ? document.documentElement
       : container
 
-  if (!target) {
-    throw new Error('render() requires a container for non-html() root')
-  }
+  if (!target) throw new Error('render() requires a container for non-html() root')
 
   const prevVNode = target.__vnode
 
@@ -268,6 +275,7 @@ export const render = (vtree, container = null) => {
   }
 
   target.__vnode = vtree
+  rootMap.set(vtree, target)
 }
 
 export const wrap = vnode => ['wrap', {}, vnode]
@@ -275,7 +283,6 @@ export const wrap = vnode => ['wrap', {}, vnode]
 /**
  * Wraps a function component so that it participates in reconciliation.
  *
- * @template T
  * @param {(...args: any[]) => any} fn - A pure function that returns a declarative tree (array format).
  * @returns {(...args: any[]) => any} - A callable component that can manage its own subtree.
  */
@@ -283,6 +290,12 @@ export const element = fn => {
   return (...args) => {
     try {
       const vnode = fn(...args)
+      const prevEl = rootMap.get(vnode)
+      if (prevEl?.parentNode) {
+        const replacement = renderTree(['wrap', {}, vnode], true)
+        prevEl.parentNode.replaceChild(replacement, prevEl)
+        return replacement.__vnode
+      }
       return ['wrap', {}, vnode]
     } catch (err) {
       console.error('Component error:', err)
@@ -292,11 +305,7 @@ export const element = fn => {
 }
 
 const tagNames = [...htmlTagNames, ...svgTagNames]
-
-const isPropsObject = x =>
-  typeof x === 'object' && x !== null
-  && !Array.isArray(x)
-  && !(typeof Node !== 'undefined' && x instanceof Node)
+const isPropsObject = x => typeof x === 'object' && x !== null && !Array.isArray(x) && !(typeof Node !== 'undefined' && x instanceof Node)
 
 /**
  * A map of supported HTML and SVG element helpers.
@@ -323,19 +332,16 @@ const isPropsObject = x =>
  *
  * @type {Record<string, ElementHelper>}
  */
-export const elements = tagNames.reduce(
-  (acc, tag) => ({
-    ...acc,
-    [tag]: (propsOrChild, ...children) => {
-      const props = isPropsObject(propsOrChild) ? propsOrChild : {}
-      const actualChildren = props === propsOrChild ? children : [propsOrChild, ...children]
-      return [tag, props, ...actualChildren]
-    }
-  }),
-  {
-    fragment: (...children) => ['fragment', {}, ...children]
+export const elements = tagNames.reduce((acc, tag) => ({
+  ...acc,
+  [tag]: (propsOrChild, ...children) => {
+    const props = isPropsObject(propsOrChild) ? propsOrChild : {}
+    const actualChildren = props === propsOrChild ? children : [propsOrChild, ...children]
+    return [tag, props, ...actualChildren]
   }
-)
+}), {
+  fragment: (...children) => ['fragment', {}, ...children]
+})
 
 /**
  * Individual element helper functions:
@@ -371,3 +377,4 @@ export const {
   svg, circle, ellipse, line, path, polygon, polyline, rect, g, defs, linearGradient,
   radialGradient, stop, symbol, use, text, viewBox
 } = elements
+

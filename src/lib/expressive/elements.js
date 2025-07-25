@@ -48,11 +48,27 @@ const stateMap = new WeakMap()
 
 const isNodeEnv = typeof document === 'undefined'
 
+/**
+ * Determines whether two vnodes differ enough to trigger a replacement.
+ * Compares by type, string value, or tag name if both are arrays.
+ *
+ * @param {*} a - First vnode
+ * @param {*} b - Second vnode
+ * @returns {boolean} - True if nodes are meaningfully different
+ */
 const changed = (a, b) =>
   typeof a !== typeof b
   || typeof a === 'string' && a !== b
   || Array.isArray(a) && Array.isArray(b) && a[0] !== b[0]
 
+/**
+ * Computes the difference between two vnodes and returns a patch object.
+ * Patch types include: CREATE, REMOVE, REPLACE, or UPDATE with child diffs.
+ *
+ * @param {*} a - Previous vnode
+ * @param {*} b - New vnode
+ * @returns {Object} patch - Instructions for transforming a into b
+ */
 const diffTree = (a, b) => {
   if (!a) return { type: 'CREATE', newNode: b }
   if (!b) return { type: 'REMOVE' }
@@ -65,6 +81,14 @@ const diffTree = (a, b) => {
   }
 }
 
+/**
+ * Recursively diffs children arrays of two vnodes.
+ * Returns an array of patch objects for each child index.
+ *
+ * @param {Array} aChildren - Previous child vnodes
+ * @param {Array} bChildren - New child vnodes
+ * @returns {Array} patches - List of patch objects
+ */
 const diffChildren = (aChildren, bChildren) => {
   const patches = []
   const len = Math.max(aChildren.length, bChildren.length)
@@ -74,6 +98,15 @@ const diffChildren = (aChildren, bChildren) => {
   return patches
 }
 
+/**
+ * Applies props to a DOM element.
+ * Handles standard DOM attributes, inline styles, event listeners,
+ * and SVG compatibility. Supports functional event handlers with
+ * automatic rerendering of the component.
+ *
+ * @param {HTMLElement} el - The DOM element to assign props to
+ * @param {Object} props - Props object with attributes and event handlers
+ */
 const assignProperties = (el, props) =>
   Object.entries(props).forEach(([k, v]) => {
     if (k.startsWith('on') && typeof v === 'function') {
@@ -177,6 +210,14 @@ const renderTree = (node, isRoot = true) => {
   return el
 }
 
+/**
+ * Applies a patch object to a DOM node, modifying its children
+ * to bring them into sync with the updated vnode.
+ *
+ * @param {HTMLElement} parent - The parent DOM element
+ * @param {Object} patch - Patch object from diffTree
+ * @param {number} [index=0] - Child index to apply the patch to
+ */
 const applyPatch = (parent, patch, index = 0) => {
   if (!patch) return
 

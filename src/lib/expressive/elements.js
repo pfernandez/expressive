@@ -106,7 +106,8 @@ const diffTree = (a, b) => {
  *
  * @param {HTMLElement} el - DOM element to receive props
  * @param {Object} props - Attributes or listeners to apply
- */const assignProperties = (el, props) =>
+ */
+const assignProperties = (el, props) =>
   Object.entries(props).forEach(([k, v]) => {
     if (k.startsWith('on') && typeof v === 'function') {
       el[k] = (...args) => {
@@ -116,8 +117,9 @@ const diffTree = (a, b) => {
 
         const prev = stateMap.get(target) ?? 0
         try {
-          const result =
-            v.length === 1 ? v.call(el, args[0]) : v.call(el, prev, ...args)
+          const result = /^(oninput|onsubmit|onchange)$/.test(k)
+            ? v.call(el, args[0])
+            : v.call(el, prev)
 
           if (Array.isArray(result)) {
             const nextCount = prev + 1

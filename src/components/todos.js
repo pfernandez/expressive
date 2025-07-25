@@ -1,31 +1,29 @@
 // todos.js
 import { button, div, element, form, input, li, span, ul } from '../lib/expressive/elements.js'
-import { filter, map } from '../lib/expressive/functions.js'
+import Counter from './counter.js'
 
-export const Todos = element((items = [{ text: 'foo', done: false }]) => {
-  const addTodo = text => Todos([...items, { text, done: false }])
+export const Todos = element((items = []) => {
+  const add = text => Todos([...items, { text, done: false }])
+  const remove = item => Todos(items.filter(i => i !== item))
+  const toggle = item =>
+    Todos(items.map(i => i === item ? { ...i, done: !item.done } : i))
 
-  const toggleTodo = index =>
-    Todos(map(items, (item, i) =>
-      i === index ? { ...item, done: !item.done } : item))
-
-  const removeTodo = index =>
-    Todos(filter(items, (_, i) => i !== index))
-
-  const submitForm = e => {
+  const submit = e => {
     e.preventDefault()
     const text = e.target.elements.todo?.value
-    if (text) return addTodo(text)
+    if (text) return add(text)
   }
 
   return div(
     form(
-      { onsubmit: submitForm },
+      { onsubmit: submit },
       input({ name: 'todo', placeholder: 'What needs doing?', }),
       button({ type: 'submit' }, 'Add')),
-    ul(...map(items, ({ text, done }, i) =>
-      li({ style: `cursor: pointer; text-decoration: ${done ? 'line-through' : 'none'};` },
-        span({ onclick: () => toggleTodo(i) }, text),
-        button({ onclick: () => removeTodo(i) }, '✕')))))
+    ul(...items.map(item =>
+      li({ style: `cursor: pointer; text-decoration: ${item.done ? 'line-through' : 'none'};` },
+        span({ onclick: () => toggle(item) }, item.text),
+        button({ onclick: () => remove(item) }, '✕')))),
+    Counter(),
+    Counter())
 })
 

@@ -24,11 +24,13 @@
     "no-multi-spaces": [ "warn", {
         "ignoreEOLComments": true,
         "exceptions": { "Property": false } } ],
-        "no-trailing-spaces": "warn",
+    "no-trailing-spaces": "warn",
     "no-undef": "warn",
     "no-unused-vars": [ "warn", {
         "args": "all",
+        "varsIgnorePattern": "^_",
         "argsIgnorePattern": "^_" } ],
+
     "object-curly-newline": [ "warn", { "consistent": true } ],
     "object-curly-spacing": [ "warn", "always" ],
     "operator-linebreak": [ "warn", "before", {

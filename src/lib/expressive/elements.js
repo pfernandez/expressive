@@ -10,6 +10,12 @@
  *
  */
 
+export const DEBUG =
+  typeof process !== 'undefined'
+  && process.env
+  && (process.env.EXPRESSIVE_DEBUG?.toLowerCase() === 'true'
+   || process.env.NODE_ENV === 'development')
+
 const htmlTagNames = [
   'a', 'abbr', 'address', 'area', 'article', 'aside', 'audio', 'b', 'base', 'bdi', 'bdo',
   'blockquote', 'body', 'br', 'button', 'canvas', 'caption', 'cite', 'code', 'col',
@@ -99,6 +105,21 @@ const diffTree = (a, b) => {
   return patches
 }
 
+/**
+ * Determines whether an event name represents a form-driven input event,
+ * which typically needs access to the event object (`e`) rather than `prev`.
+ *
+ * These events — such as `onsubmit`, `oninput`, and `onchange` — often
+ * depend on `e.target`, call `preventDefault()`, or extract form values.
+ *
+ * In contrast, simple state-driven events like `onclick` generally receive
+ * a synthetic `prev` counter instead of `e`.
+ *
+ * @param {string} eventName - The property key (e.g. 'onclick', 'onsubmit')
+ * @returns {boolean} - True if the event should receive the native event object
+ */
+const isEventDriven = eventName =>
+  /^(oninput|onsubmit|onchange)$/.test(eventName)
 
 /**
  * Assigns attributes, styles, and event handlers to a DOM element.
@@ -116,28 +137,34 @@ const assignProperties = (el, props) =>
         if (!target) return
 
         const prev = stateMap.get(target) ?? 0
+
         try {
-          const result = /^(oninput|onsubmit|onchange)$/.test(k)
-            ? v.call(el, args[0])
-            : v.call(el, prev)
+          const isEvent = isEventDriven(k)
+          const result = isEvent ? v.call(el, args[0]) : v.call(el, prev)
+
+          if (DEBUG && result === undefined && !isEventDriven) {
+            console.warn(
+              `Listener '${k}' on <${el.tagName.toLowerCase()}> returned nothing. `
+            + 'No update will occur. If you intended a UI update, make sure to return a vnode.')
+          }
 
           if (Array.isArray(result)) {
-            const nextCount = prev + 1
             const parent = target.parentNode
             if (!parent) return
 
             const replacement = renderTree(result, true)
             parent.replaceChild(replacement, target)
+
             replacement.__vnode = result
-            stateMap.set(replacement, nextCount)
+            replacement.__root = true
+            stateMap.set(replacement, 0) // or reuse prev?
             rootMap.set(result, replacement)
           }
         } catch (err) {
           console.error('Error in handler:', err)
         }
       }
-    }
-    else if (k === 'style' && typeof v === 'object') {
+    } else if (k === 'style' && typeof v === 'object') {
       Object.assign(el.style, v)
     } else if (k === 'innerHTML') {
       el.innerHTML = v
@@ -149,7 +176,8 @@ const assignProperties = (el, props) =>
           el.setAttribute(k, v)
         }
       } catch {
-        console.warn(`Illegal DOM property assignment for ${el.tagName}: ${k}: ${v}`)
+        console.warn(
+          `Illegal DOM property assignment for ${el.tagName}: ${k}: ${v}`)
       }
     }
   })

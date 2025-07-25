@@ -5,7 +5,7 @@ const Counter = element(
     div(
       pre(count),
       button(
-        { onclick: prev => Counter(prev + 1) },
+        { onclick: () => Counter(count + 1) },
         'Increment')))
 
 export default Counter

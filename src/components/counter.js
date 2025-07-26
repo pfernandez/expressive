@@ -1,12 +1,10 @@
-import { button, div, element, pre } from '../lib/expressive/elements.js'
+import { button, div, element, output } from '../lib/elements.js'
 
-const Counter = element(
+export const counter = element(
   (count = 0) =>
     div(
-      pre(count),
+      output(count),
       button(
-        { onclick: () => Counter(count + 1) },
+        { onclick: () => counter(count + 1) },
         'Increment')))
-
-export default Counter
 

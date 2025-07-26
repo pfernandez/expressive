@@ -1,0 +1,19 @@
+section {
+  max-width: 600px;
+}
+
+output {
+  font-size: xx-large;
+  font-weight: bold;
+  font-family: monospace;
+  padding: 1em;
+}
+
+li > span:hover {
+  opacity: 0.8;
+}
+
+li > button {
+  padding: 2px 8px;
+  margin-left: 10px;
+}

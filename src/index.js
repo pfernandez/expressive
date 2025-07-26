@@ -1,18 +1,28 @@
-import { body, h1, h2, head, header, hgroup, html, link, main, render, title } from './lib/expressive/elements.js'
-import { Todos } from './components/todos.js'
+import { body, h1, h2, h3, head, header, html,
+         link, main, render, section, title } from './lib/elements.js'
+import { counter } from './components/counter.js'
+import { todos } from './components/todos.js'
 
 render(
   html(
     head(
       title('Expressive'),
       link({ rel: 'icon', href: 'img/favicon.ico' }),
-      link({ rel: 'stylesheet', href: '@picocss/pico/css/pico.classless.min.css' }),
-      link({ rel: 'stylesheet', href: 'style.css' }),
-      link({ rel: 'stylesheet', href: 'lib/highlight/styles/github.min.css' })),
+      link({ rel: 'stylesheet',
+             href: './css/pico.classless.sand.min.css' }),
+      link({ rel: 'stylesheet', href: './css/style.css' })),
     body(
       header(
-        hgroup(
-          h1('Expressive JS'),
-          h2('A functional todos app demo'))),
+        h1('Elements.js Demo')),
       main(
-        Todos()))))
+        section(
+          h2('Todos'),
+          todos()),
+        section(
+          h2('Counters'),
+          section(
+            h3('Counter 1'),
+            counter()),
+          section(
+            h3('Counter 2'),
+            counter()))))))

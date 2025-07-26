@@ -39,14 +39,6 @@ const svgTagNames = [
 const svgNS = 'http://www.w3.org/2000/svg'
 
 /**
- * Tracks internal state (such as render count) for each root element.
- * This map enables component functions to re-render themselves with updated vnodes
- * while preserving isolation from unrelated DOM elements.
- *
- * @type {WeakMap<HTMLElement, number>}
- */const stateMap = new WeakMap()
-
-/**
  * Maps vnode instances to their current root DOM element,
  * allowing accurate replacement when the same vnode is re-invoked.
  *
@@ -106,22 +98,6 @@ const diffTree = (a, b) => {
 }
 
 /**
- * Determines whether an event name represents a form-driven input event,
- * which typically needs access to the event object (`e`) rather than `prev`.
- *
- * These events — such as `onsubmit`, `oninput`, and `onchange` — often
- * depend on `e.target`, call `preventDefault()`, or extract form values.
- *
- * In contrast, simple state-driven events like `onclick` generally receive
- * a synthetic `prev` counter instead of `e`.
- *
- * @param {string} eventName - The property key (e.g. 'onclick', 'onsubmit')
- * @returns {boolean} - True if the event should receive the native event object
- */
-const isEventDriven = eventName =>
-  /^(oninput|onsubmit|onchange)$/.test(eventName)
-
-/**
  * Assigns attributes, styles, and event handlers to a DOM element.
  * Includes logic for wrapping event handlers that trigger subtree rerenders.
  *
@@ -136,17 +112,8 @@ const assignProperties = (el, props) =>
         while (target && !target.__root) target = target.parentNode
         if (!target) return
 
-        const prev = stateMap.get(target) ?? 0
-
         try {
-          const isEvent = isEventDriven(k)
-          const result = isEvent ? v.call(el, args[0]) : v.call(el, prev)
-
-          if (DEBUG && result === undefined && !isEventDriven) {
-            console.warn(
-              `Listener '${k}' on <${el.tagName.toLowerCase()}> returned nothing. `
-            + 'No update will occur. If you intended a UI update, make sure to return a vnode.')
-          }
+          const result = v.call(el, ...args)
 
           if (Array.isArray(result)) {
             const parent = target.parentNode
@@ -157,7 +124,6 @@ const assignProperties = (el, props) =>
 
             replacement.__vnode = result
             replacement.__root = true
-            stateMap.set(replacement, 0) // or reuse prev?
             rootMap.set(result, replacement)
           }
         } catch (err) {
@@ -228,8 +194,6 @@ const renderTree = (node, isRoot = true) => {
 
   if (isRoot && tag !== 'html' && tag !== 'head' && tag !== 'body') {
     el.__root = true
-    const initialState = typeof node[2] === 'number' ? node[2] : 0
-    stateMap.set(el, initialState)
     rootMap.set(node, el)
   }
 
